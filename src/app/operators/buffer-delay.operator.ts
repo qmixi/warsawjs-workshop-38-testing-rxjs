@@ -1,33 +1,51 @@
-import {BehaviorSubject, MonoTypeOperatorFunction, Observable, Operator, Subject, Subscriber, TeardownLogic, zip} from 'rxjs';
-import {filter, map, takeUntil, tap} from 'rxjs/operators';
+import {
+  asyncScheduler,
+  BehaviorSubject,
+  MonoTypeOperatorFunction,
+  Observable,
+  Operator,
+  Subject,
+  Subscriber,
+  TeardownLogic,
+  zip,
+} from 'rxjs';
+import {filter, finalize, map, takeUntil, tap} from 'rxjs/operators';
 import {notNull} from './not-null.operator';
 
-export const bufferDelay = <T>(time: number): MonoTypeOperatorFunction<T> => (source: Observable<T>): Observable<T> => {
-  return new Observable<T>(observer => {
-    const ready = new BehaviorSubject<boolean>(true);
-    const isReady$ = ready.asObservable().pipe(filter(v => v));
+export const bufferDelay1 = (time: number) => (source: Observable<number>) => source;
 
-    zip(source, isReady$)
-      .pipe(
-        tap(() => {
-          ready.next(false);
-          setTimeout(() => ready.next(true), time);
-        }),
-        map(([v]) => v),
-      )
-      .subscribe({
-        next: (x) => {
-          observer.next(x);
-        },
-        error: (err) => {
-          observer.error(err);
-        },
-        complete: () => {
-          observer.complete();
-        }
-      });
-  });
-};
+export const bufferDelay =
+  <T>(time: number): MonoTypeOperatorFunction<T> => (source: Observable<T>): Observable<T> => {
+    return new Observable<T>(observer => {
+      const scheduler = asyncScheduler;
+      const ready = new BehaviorSubject<boolean>(true);
+      const isReady$ = ready.asObservable().pipe(filter(v => v));
+      const done$ = new Subject();
+
+      zip(source.pipe(finalize(() => done$.next())), isReady$)
+        .pipe(
+          tap(() => {
+            ready.next(false);
+            scheduler.schedule(() => {
+              ready.next(true);
+            }, time);
+          }),
+          map(([v]) => v),
+          // takeUntil(done$)
+        )
+        .subscribe({
+          next: (x) => {
+            observer.next(x);
+          },
+          error: (err) => {
+            observer.error(err);
+          },
+          complete: () => {
+            observer.complete();
+          }
+        });
+    });
+  };
 
 class BufferDelayOperator<T> implements Operator<T, T> {
   constructor(private time: number) {
@@ -53,7 +71,10 @@ class BufferDelaySubscriber<T> extends Subscriber<T> {
       .pipe(
         tap(() => {
           this.ready.next(false);
-          setTimeout(() => this.ready.next(true), time);
+          setTimeout(() => {
+            this.ready.next(true);
+            console.log('dam open');
+          }, time);
         }),
         map(([v]) => v),
         takeUntil(this.completeSubject.asObservable()),
