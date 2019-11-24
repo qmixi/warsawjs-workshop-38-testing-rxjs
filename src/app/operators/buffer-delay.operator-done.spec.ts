@@ -4,7 +4,7 @@ import {marbles} from 'rxjs-marbles/jasmine';
 import {take} from 'rxjs/operators';
 import {bufferDelay} from './buffer-delay.operator';
 
-fdescribe('bufferDelay tests', () => {
+describe('bufferDelay tests', () => {
   it('should test with done callback', (done: DoneFn) => {
     let currValue: number | undefined;
     const arr = [1, 2, 3, 4];

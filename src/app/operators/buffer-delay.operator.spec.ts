@@ -1,7 +1,7 @@
 import {fakeAsync} from '@angular/core/testing';
 import {marbles} from 'rxjs-marbles/jasmine';
 
-fdescribe('bufferDelay tests', () => {
+describe('bufferDelay tests', () => {
   it('should test with done callback', (done: DoneFn) => {
     done();
   });

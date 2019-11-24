@@ -6,6 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "test": "ng test",
+    "testv": "./node_modules/.bin/ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
   },
